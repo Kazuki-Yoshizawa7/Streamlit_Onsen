@@ -4,7 +4,8 @@ import numpy as np
 """
 ここでは、体質診断を行なった結果のDataFrameに対して点数化を行い、複数の体質に分けていく：
 """
-
+# https://mainichigahakken.net/health/article/post-1961.php これを参考にした
+ 
 class Taishitsu():
 
     def __init__(self,data):
