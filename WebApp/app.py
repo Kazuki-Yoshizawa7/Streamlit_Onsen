@@ -21,5 +21,7 @@ with col1:
     if st.button("体質診断へ",use_container_width = True):
         st.switch_page("pages/type_clustering.py")
 
-
+with col2:
+    if st.button("温泉検索へ",use_container_width = True):
+        st.switch_page("pages/search.py")
     

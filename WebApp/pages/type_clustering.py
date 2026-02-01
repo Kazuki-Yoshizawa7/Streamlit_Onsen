@@ -1,14 +1,79 @@
 import streamlit as st
 import pandas as pd
 from components.clustering import Taishitsu 
+import base64
+import os
+import plotly.express as px
+import numpy as np  
+from pycirclize import Circos
 
-st.title("体質診断 Constitution Analysis Page")
 
-st.write("ここでは体質診断を行う")
+def set_bg_image(png_file, overlay_opacity=0.7):
+    """
+    画像を背景に設定する。
+    overlay_opacity: 0.0〜1.0の間で指定。
+                     数値が大きいほど白いフィルターが濃くなり、画像は薄くなります。
+    """
+    if not os.path.exists(png_file):
+        st.error(f"エラー: 画像ファイルが見つかりません: {png_file}")
+        return
+
+    # バイナリ読み込みとBase64変換
+    with open(png_file, 'rb') as f:
+        data = f.read()
+    bin_str = base64.b64encode(data).decode()
+    
+    # 画像タイプ判定
+    _, ext = os.path.splitext(png_file)
+    img_type = ext.lower().replace(".", "")
+    if img_type == 'jpg':
+        img_type = 'jpeg'
+
+    # CSS生成
+    # linear-gradient で半透明の白を重ねています
+    css = f'''
+    <style>
+        .stApp {{
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, {overlay_opacity}), rgba(255, 255, 255, {overlay_opacity})),
+                url("data:image/{img_type};base64,{bin_str}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }}
+        .stApp > header {{
+            background-color: transparent;
+        }}
+    </style>
+    '''
+    st.markdown(css, unsafe_allow_html=True)
+
+
+# ==========================================
+# 使い方
+# ==========================================
+
+image_path = '/Users/yoshizawakazuki/Streamlit_Onsen/static/img1.jpg'
+
+# 第二引数の数字を調整してください (0.0 〜 1.0)
+# 0.5 = 半分ぐらいの薄さ
+# 0.8 = かなり白っぽく（文字が読みやすい推奨値）
+# 0.9 = うっすら見える程度
+set_bg_image(image_path, overlay_opacity=0.8)
+
+
+
+
+
+
+st.title("体質診断 Body Type Diagnosis Page")
+
+st.write("Please answer the following questions to determine your body type.")
 
 # ホームに戻るボタン
 if st.button("🏠 Back to Home"):
     st.switch_page("app.py")
+
 
 
 
@@ -134,7 +199,7 @@ questions = [
     }
 ]
 
-st.title("体質診断 / Constitution Analysis")
+st.title("体質診断 / Body Type Diagnosis")
 
 # 現在の質問番号
 current_q = st.session_state.current_question
@@ -163,17 +228,41 @@ if current_q >= len(questions):
     st.subheader("Your Body Type")
     st.write(f"Type: {top}")
 
+    # Rador Chart
+    st.subheader("Radar Chart")
+    
+    result_df = pd.DataFrame(result).T.rename(index={0: 'Score'})
+    
+    # ここでMatplotlibのFigureオブジェクトが生成されています
+    circos = Circos.radar_chart(
+        result_df,
+        vmax=30,
+        grid_interval_ratio=0.2,
+    )
+    fig = circos.plotfig()
+
+    # Matplotlibの図を表示するには st.pyplot を使います
+    st.pyplot(fig)
+
+
+
+
+
+
+
+
+
     # CSV出力
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="CSVダウンロード",
+        label="CSV Download",
         data=csv,
         file_name="answers.csv",
         mime="text/csv"
     )
     
     # リセットボタン
-    if st.button("最初からやり直す"):
+    if st.button("Reset"):
         st.session_state.current_question = 0
         st.session_state.answers = []
         st.rerun()
